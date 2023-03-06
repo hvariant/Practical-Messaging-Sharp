@@ -34,12 +34,22 @@ namespace SimpleMessaging
                         while (true)
                         {
                             /*
-                             * TODO: receive a request on the channel
+                             * DONE: receive a request on the channel
                              * if the request is not null then
                              *     handle the message
                              *     create a RequestReplyChannelResponder
                              *     respond to the request, with the response from the handler
                              */
+
+                            var message = channel.Receive();
+                            if (message != null)
+                            {
+                                var response = _messageHandler.Handle(message);
+                                using (var responder = new RequestReplyChannelResponder<TResponse>(_messageSerializer))
+                                {
+                                    responder.Respond(message.ReplyTo, response);
+                                }
+                            }
                             
                             
                             Task.Delay(1000, ct).Wait(ct); //yield

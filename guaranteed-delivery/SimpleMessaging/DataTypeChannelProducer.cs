@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Framing;
 
 namespace SimpleMessaging
 {
@@ -77,7 +78,11 @@ namespace SimpleMessaging
             var body = Encoding.UTF8.GetBytes(_messageSerializer(message));
             //In order to do guaranteed delivery, we want to use the broker's message store to hold the message, 
             //so that it will be available even if the broker restarts
-            // TODO: Set the basic properties to ensure that we have persistent messages
+            // DONE: Set the basic properties to ensure that we have persistent messages
+            var props = new BasicProperties
+            {
+                Persistent = true
+            };
             _channel.BasicPublish(exchange: ExchangeName, routingKey: _routingKey, basicProperties: props, body: body);
         }
 

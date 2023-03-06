@@ -51,7 +51,25 @@ namespace SimpleMessaging
                     {
                         while (true)
                         {
-                            /* TODO
+                            var inMessage = inPipe.Receive();
+                            if (inMessage != null)
+                            {
+                                var outMessage = _operation.Execute(inMessage);
+                                outMessage.Steps[outMessage.CurrentStep].Completed = true;
+                                outMessage.CurrentStep++;
+
+                                if (outMessage.Steps.ContainsKey(outMessage.CurrentStep))
+                                {
+                                    var routingKey = outMessage.Steps[outMessage.CurrentStep].RoutingKey;
+                                    using (var producer =
+                                        new DataTypeChannelProducer<T>(routingKey, _messasgeSerializer, _hostName))
+                                    {
+                                        producer.Send(outMessage);
+                                    }
+                                }
+
+                            }
+                            /* DONE
                              * receive a message from the in pipe
                              * if we get non-null message
                              *     execute the operation on it to get the out message

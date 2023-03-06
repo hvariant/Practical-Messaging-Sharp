@@ -88,15 +88,17 @@ namespace SimpleMessaging
                 try
                 {
                     /*
-                     * TODO
+                     * DONE
                      * deserialize the message
                      * Ackknowledge the message (use the delivery tag)
                      * set the reply to property of the message, from the result properties
                      * return the message
                      */
-                    
-                   //T message =
-                   return message;
+
+                    var message = _messageDeserializer(Encoding.UTF8.GetString(result.Body));
+                    _channel.BasicAck(result.DeliveryTag, false);
+                    message.ReplyTo = result.BasicProperties.ReplyTo;
+                    return message;
                 }
                 catch (JsonSerializationException e)
                 {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Framing;
 
 namespace SimpleMessaging
 {
@@ -37,13 +38,20 @@ namespace SimpleMessaging
                 
                 
                 /*
-                 * TODO: crate basic properites via the channel
+                 * DONE: crate basic properites via the channel
                  * Set the correlation id
                  * serialize the message
                  * Turn it into UTF8
                  * Publish th othe default exchange hint: "" where routing key = queue name
                  * 
                  */
+
+                var props = new BasicProperties
+                {
+                    CorrelationId = response.CorrelationId.ToString(),
+                };
+                var body = Encoding.UTF8.GetBytes(_messageSerializer(response));
+                _channel.BasicPublish("", replyQueuename, props, body);
                
                 Console.WriteLine("Responded on queue {0} at {1}", replyQueuename, DateTime.UtcNow);
      

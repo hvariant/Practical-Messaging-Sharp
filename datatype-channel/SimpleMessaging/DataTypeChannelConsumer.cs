@@ -56,9 +56,10 @@ namespace SimpleMessaging
         {
             var result = _channel.BasicGet(_queueName, autoAck: true);
             if (result != null)
-                //TODO: deserialize the message
+                return _messageDeserializer(Encoding.UTF8.GetString(result.Body));
+            //DONE: deserialize the message
             else
-                return default(T) ;
+                return default(T);
         }   
 
         public void Dispose()

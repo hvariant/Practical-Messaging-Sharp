@@ -34,30 +34,47 @@ namespace SimpleMessaging
         /// </summary>
         /// <param name="ct"></param>
         /// <returns></returns>
-        public Task Run(CancellationToken ct)
+        public async Task Run(CancellationToken ct)
         {
-            var task = Task.Factory.StartNew(() =>
+            ct.ThrowIfCancellationRequested();
+
+            using (var consumer = new DataTypeChannelConsumer<TIn>(_messageDeserializer))
+            {
+                while (true)
                 {
-                    ct.ThrowIfCancellationRequested();
-                    
-                    /*TODO
-                     *
-                     * Create an in pipe from a DataTypeChannelConsumer
-                     * while true
-                     *     read from the inpipe
-                     *     if we get a message
-                     *         use the operation to transform the message
-                     *         create a DataTypeChannelProducer for the out pipe
-                     *             Send the message on the outpipe
-                     *         dispose of the producer
-                     *     else
-                     *         delay by 1ms
-                     *     check for a cancelled token
-                     * displose of the consumer
-                     */
-               }, ct
-            );
-            return task;
+                    var message = consumer.Receive();
+                    if (message != null)
+                    {
+                        var messageOut = _operation.Execute(message);
+
+                        using (var producer = new DataTypeChannelProducer<TOut>(_messasgeSerializer))
+                        {
+                            producer.Send(messageOut);
+                        }
+                    }
+                    else
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(1), ct);
+                    }
+                }
+            }
+
+
+            /*DONE
+             *
+             * Create an in pipe from a DataTypeChannelConsumer
+             * while true
+             *     read from the inpipe
+             *     if we get a message
+             *         use the operation to transform the message
+             *         create a DataTypeChannelProducer for the out pipe
+             *             Send the message on the outpipe
+             *         dispose of the producer
+             *     else
+             *         delay by 1ms
+             *     check for a cancelled token
+             * displose of the consumer
+             */
         }
     }
 }

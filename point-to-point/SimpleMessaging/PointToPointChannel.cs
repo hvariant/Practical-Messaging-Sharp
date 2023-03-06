@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Framing;
 
 namespace SimpleMessaging
 {
@@ -37,11 +38,16 @@ namespace SimpleMessaging
             //Because we are point to point, we are just going to use queueName for the routing key
             _routingKey = queueName;
             _queueName = queueName;
-            
-            //TODO: declare a non-durable direct exchange via the channel
-            //TODO: declare a non-durable queue. non-exc;usive, that does not auto-delete. Use _queuename
-            //TODO: bind _queuename to _routingKey on the exchange
-       }
+
+            _channel.ExchangeDeclare(ExchangeName, ExchangeType.Direct, false);
+            _channel.QueueDeclare(queueName, false, false, false);
+
+            _channel.QueueBind(_queueName, ExchangeName, _routingKey);
+
+            //DONE: declare a non-durable direct exchange via the channel
+            //DONE: declare a non-durable queue. non-exc;usive, that does not auto-delete. Use _queuename
+            //DONE: bind _queuename to _routingKey on the exchange
+        }
 
         /// <summary>
         /// Send a message over the channel
@@ -52,7 +58,8 @@ namespace SimpleMessaging
         public void Send(string message)
         {
             var body = Encoding.UTF8.GetBytes(message);
-            //TODO: Publish on the exchange using the routing key
+            _channel.BasicPublish(ExchangeName, _routingKey, new BasicProperties(), body);
+            //DONE: Publish on the exchange using the routing key
         }
 
         /// <summary>
@@ -63,11 +70,11 @@ namespace SimpleMessaging
         /// <returns></returns>
         public string Receive()
         {
-            //TODO: Use basic get to read a message, auto acknowledge the message
-            //var result = 
-            //if (result != null)
-            //    return Encoding.UTF8.GetString(result.Body);
-            //else
+            //DONE: Use basic get to read a message, auto acknowledge the message
+            var result = _channel.BasicGet(_queueName, true);
+            if (result != null)
+                return Encoding.UTF8.GetString(result.Body);
+            else
                 return null;
         }   
 

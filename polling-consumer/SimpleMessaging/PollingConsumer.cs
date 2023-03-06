@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace SimpleMessaging
 {
@@ -17,10 +18,25 @@ namespace SimpleMessaging
             _hostName = hostName;
         }
         
-        public Task Run(CancellationToken ct)
+        public async Task Run(CancellationToken ct)
         {
+            ct.ThrowIfCancellationRequested();
+
+            using(var consumer = new DataTypeChannelConsumer<T>(_messageSerializer)) {
+                while (true)
+                {
+                    var message = consumer.Receive();
+                    _messageHandler.Handle(message);
+
+                    await Task.Delay(TimeSpan.FromSeconds(1), ct);
+
+                    ct.ThrowIfCancellationRequested();
+                }
+            }
+
+
             /*
-             * TODO:
+             * DONE:
              * Create a Task that will
              *     check for cancellation
              *     create a data type channel consumer

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Model;
 using Newtonsoft.Json;
 using SimpleMessaging;
@@ -16,18 +17,23 @@ namespace Sender
                 )
             )
             {
-                var greeting = new Greeting();
-                greeting.Salutation = "Hello World!";
-                var response = channel.Call(greeting, 5000);
-                Console.WriteLine("Sent message Greeting {0} Correlation Id {1}", greeting.Salutation, greeting.CorrelationId);
-                if (response != null)
+                while(true)
                 {
-                    Console.WriteLine("Received Message {0} Correlation Id {1} at {2}", 
-                        response.Result, response.CorrelationId, DateTime.UtcNow);
-                }
-                else
-                {
-                    Console.WriteLine("Did not receive a response");
+                    var greeting = new Greeting();
+                    greeting.Salutation = "Hello World!";
+                    var response = channel.Call(greeting, 5000);
+                    Console.WriteLine("Sent message Greeting {0} Correlation Id {1}", greeting.Salutation, greeting.CorrelationId);
+                    if (response != null)
+                    {
+                        Console.WriteLine("Received Message {0} Correlation Id {1} at {2}",
+                            response.Result, response.CorrelationId, DateTime.UtcNow);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Did not receive a response");
+                    }
+
+                    Task.Delay(TimeSpan.FromMilliseconds(10)).Wait();
                 }
             }
 

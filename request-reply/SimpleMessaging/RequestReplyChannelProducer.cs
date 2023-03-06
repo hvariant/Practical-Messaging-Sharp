@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Framing;
 
 namespace SimpleMessaging
 {
@@ -94,21 +95,62 @@ namespace SimpleMessaging
             //Note that we do not need bind to the default exchange; any queue declared on the default exchange
             //automatically has a routing key that is the queue name. Because we choose a random
             //queue name this means we avoid any collisions
-            
-            // TODO: Declare a queue for replies, non-durable, exclusive, auto-deleting. no queue name
-            // TODO: Assign auto generated queuename to variable for later use
-            
-            // TODO: serialize the body, and turn it into a byte[] with URF8 encoding
+
+            var tempQueue = _channel.QueueDeclare(durable: false, exclusive: true, autoDelete: true);
+            var tempQueueName = tempQueue.QueueName;
+
+            // DONE: Declare a queue for replies, non-durable, exclusive, auto-deleting. no queue name
+            // DONE: Assign auto generated queuename to variable for later use
+
+            var body = Encoding.UTF8.GetBytes(_messageSerializer(message));
+            var props = new BasicProperties
+            {
+                Persistent = true,
+                ReplyTo = tempQueueName,
+                CorrelationId = message.CorrelationId.ToString()
+            };
+
+            _channel.BasicPublish(ExchangeName, _routingKey, props, body);
+
+            // DONE: serialize the body, and turn it into a byte[] with URF8 encoding
             //In order to do guaranteed delivery, we want to use the broker's message store to hold the message, 
             //so that it will be available even if the broker restarts
-            // TODO: Create basic properties for the channel
-            // TODO: Make the message persistent
-            // TODO: Set reply to on the props to the random queue name from above
-            // TODO: Publish to the consumer on ExchangeName with _routingKey and props and body
-            
+            // DONE: Create basic properties for the channel
+            // DONE: Make the message persistent
+            // DONE: Set reply to on the props to the random queue name from above
+            // DONE: Publish to the consumer on ExchangeName with _routingKey and props and body
+
+            TResponse response = null;
+            DateTime timeOutDateTime = DateTime.UtcNow + TimeSpan.FromMilliseconds(timeoutInMilliseconds);
+            while (DateTime.UtcNow < timeOutDateTime)
+            {
+                var result = _channel.BasicGet(tempQueueName, false);
+                if (result != null)
+                {
+                    try
+                    {
+                        response = _messageDeserializer(Encoding.UTF8.GetString(result.Body));
+                    }
+                    catch (JsonSerializationException e)
+                    {
+                        Console.WriteLine($"Error processing the incoming message {e}");
+                        //remove from the queue
+                        _channel.BasicAck(deliveryTag: result.DeliveryTag, multiple: false);
+                    }
+                }
+                else
+                {
+                    Task.Delay(TimeSpan.FromMilliseconds(Math.Round((double)timeoutInMilliseconds / 5))).Wait();
+                }
+            }
+
+            _channel.QueueDeleteNoWait(tempQueueName);
+
+            return response;
+
             //now we want to listen
             /*
-             * TODO
+             * DONE
              * whilst a time the timeout period is not up
              *     read from the reply queue
              *     if we have a message
@@ -120,7 +162,7 @@ namespace SimpleMessaging
              * delete the reply queue when done
              * return the response
              */
-       }
+        }
 
         public void Dispose()
         {
